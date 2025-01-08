@@ -1,19 +1,42 @@
-const express = require('express')
-const dotenv=require('dotenv')
-const bootcamps=require('./routes/bootcamps')
-dotenv.config()
-const app = express()
-const logger=(req,res,next)=>{
-  req.hello='Hello world';
-  console.log('Middleware ran');
-  next();
+// server.js
+
+const express = require('express');
+const dotenv = require('dotenv');
+const morgan = require('morgan');
+const connectDB = require('./config/db');
+const bootcampRoutes = require('./routes/bootcamps');
+
+// Load environment variables from .env file
+dotenv.config();
+
+// Connect to the database
+connectDB();
+
+const app = express();
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// Logging middleware (use morgan in development mode)
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
 }
-app.use(logger)
-app.use('/api/v1/bootcamps',bootcamps)
 
-const port = process.env.PORT
+// Mount routes
+app.use('/api/v1/bootcamps', bootcampRoutes);
+
+// Custom error handler middleware
 
 
+const PORT = process.env.PORT || 5000;
 
+const server = app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err, promise) => {
+  console.error(`Unhandled Rejection: ${err.message}`);
+  // Close server & exit process
+  server.close(() => process.exit(1));
+});
