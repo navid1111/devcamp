@@ -5,6 +5,8 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
 const bootcampRoutes = require('./routes/bootcamps');
+const errorHandler = require('./middleware/error');
+const asyncHandler = require('./middleware/async');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -13,9 +15,12 @@ dotenv.config();
 connectDB();
 
 const app = express();
+// Body parser
+
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
 
 // Logging middleware (use morgan in development mode)
 if (process.env.NODE_ENV === 'development') {
@@ -24,6 +29,9 @@ if (process.env.NODE_ENV === 'development') {
 
 // Mount routes
 app.use('/api/v1/bootcamps', bootcampRoutes);
+app.use(asyncHandler)
+
+app.use(errorHandler);
 
 // Custom error handler middleware
 
