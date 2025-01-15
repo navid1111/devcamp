@@ -46,7 +46,7 @@ const BootcampSchema = new mongoose.Schema({
         coordinates: {
             type: [Number],
             index: '2dsphere',
-            required:true
+            
         },
         formattedAddress: String,
         street: String,
@@ -108,6 +108,7 @@ BootcampSchema.pre('save',function(next){
 // Geocode and create location field
 BootcampSchema.pre('save', async function(next) {
     const loc = await geocoder.geocode(this.address);
+    console.log(loc)
     if (loc.length > 0) {
       this.location = {
         type: 'Point',

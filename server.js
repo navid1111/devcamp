@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
 const bootcampRoutes = require('./routes/bootcamps');
+const authRoutes=require('./routes/auth')
 const errorHandler = require('./middleware/error');
 const asyncHandler = require('./middleware/async');
 
@@ -29,6 +30,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // Mount routes
 app.use('/api/v1/bootcamps', bootcampRoutes);
+app.use('/api/v1/auth', authRoutes);
 app.use(asyncHandler)
 
 app.use(errorHandler);
