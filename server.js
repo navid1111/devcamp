@@ -8,6 +8,7 @@ const bootcampRoutes = require('./routes/bootcamps');
 const authRoutes=require('./routes/auth')
 const errorHandler = require('./middleware/error');
 const asyncHandler = require('./middleware/async');
+const cookieParser=require('cookie-parser')
 
 // Load environment variables from .env file
 dotenv.config();
@@ -21,6 +22,9 @@ const app = express();
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
+// Cookie parser
+app.use(cookieParser())
 
 
 // Logging middleware (use morgan in development mode)
