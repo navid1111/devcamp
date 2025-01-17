@@ -2,16 +2,35 @@ const asyncHandler = require('../middleware/async');
 const Bootcamp= require('../models/Bootcamp');
 const errorResponse = require('../utils/errorResponse');
 const geocoder=require('../utils/nodeGeocoder')
-
+const User= require('../models/User');
 
 
 // @desc   Create new bootcamp
 // @route  POST /api/v1/bootcamps
 // @access Private
 exports.createBootcamp=asyncHandler(async(req,res,next)=>{
+        // Add User to req.body
+        req.body.user=req.user.id;
+        const bootcampData = {
+            ...req.body,
+            owner: req.user.id,
+            userRoles: [
+              {
+                user: req.user.id,
+                role: 'owner',
+              
+              },
+            ],
+            permissions: {
+                roleManage:['owner'],
+                update: ['owner'],
+                delete: ['owner'],
+              },
+          };
+
         
     
-        const bootcamp=await Bootcamp.create(req.body);
+        const bootcamp=await Bootcamp.create(bootcampData);
         res.status(201).json({
             success:true,
             data:bootcamp
@@ -119,3 +138,77 @@ exports.getBootcampsInRadius=asyncHandler(async(req,res,next)=>{
 
 })
 
+// @desc Post adds an user in his turf with assigning a role
+// @route POST/api/v1/bootcamp/assign
+// @private
+exports.addUserToBootcamp = asyncHandler(async (req, res, next) => {
+    const { userId, role } = req.body;
+  
+    // Input validation
+    if (!userId || !role) {
+      return next(new errorResponse('Please provide both userId and role', 400));
+    }
+
+    // Validate role is either 'editor' or 'owner'
+    if (!['editor', 'owner'].includes(role)) {
+      return next(new errorResponse('Role must be either editor or owner', 400));
+    }
+
+    try {
+        // First check if both user and bootcamp exist
+        const [userToAdd, bootcamp] = await Promise.all([
+            User.findById(userId),
+            Bootcamp.findById(req.params.id)
+        ]);
+
+        if (!userToAdd) {
+            return next(new errorResponse(`User with ID ${userId} was not found`, 404));
+        }
+
+        if (!bootcamp) {
+            return next(new errorResponse(`Bootcamp with ID ${req.params.id} was not found`, 404));
+        }
+
+        // Check for existing role
+        const existingRole = bootcamp.userRoles.find(
+            userRole => userRole.user.toString() === userId.toString()
+        );
+
+        if (existingRole) {
+            return next(
+                new errorResponse(
+                    `User with ID ${userId} is already assigned to this bootcamp with role: ${existingRole.role}`,
+                    400
+                )
+            );
+        }
+
+        // Instead of using save(), use findByIdAndUpdate
+        const updatedBootcamp = await Bootcamp.findByIdAndUpdate(
+            req.params.id,
+            {
+                $push: {
+                    userRoles: { user: userId, role: role }
+                }
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            data: updatedBootcamp.userRoles
+        });
+
+    } catch (error) {
+        console.error('Update Error:', error);
+        
+        if (error.name === 'ValidationError') {
+            return next(new errorResponse(`Validation Error: ${error.message}`, 400));
+        }
+
+        return next(new errorResponse('Error updating bootcamp user roles', 500));
+    }
+});

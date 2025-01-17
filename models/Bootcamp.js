@@ -93,12 +93,41 @@ const BootcampSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
-});
 
+    owner: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        required: true, // Ensure every bootcamp has an owner
+      },
+    
+      // Users and their roles/permissions
+      userRoles: [
+        {
+          user: {
+            type: mongoose.Schema.ObjectId,
+            ref: 'User',
+            required: true,
+          },
+          role: {
+            type: String,
+            enum: ['owner', 'editor'],
+            required: true,
+          },
+       
+        },
+        
+      ],
+      permissions: {
+        type: Map, // Key-value pairs for action-specific roles
+        of: [String], // The value is an array of roles
+        default: {}, // Default is an empty object
+      },
+    
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    });
 // Create bootcamp slug from the name
 BootcampSchema.pre('save',function(next){
     this.slug=slugify(this.name,{lower:true})
@@ -108,7 +137,7 @@ BootcampSchema.pre('save',function(next){
 // Geocode and create location field
 BootcampSchema.pre('save', async function(next) {
     const loc = await geocoder.geocode(this.address);
-    console.log(loc)
+   
     if (loc.length > 0) {
       this.location = {
         type: 'Point',

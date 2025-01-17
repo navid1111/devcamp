@@ -1,16 +1,19 @@
-const {getBootcamps, createBootcamp, getBootcamp, updateBootcamp, deleteBootcamp,getBootcampsInRadius} = require('../controllers/bootcamps.js')
+const {getBootcamps, createBootcamp, getBootcamp, updateBootcamp, deleteBootcamp,getBootcampsInRadius, addUserToBootcamp} = require('../controllers/bootcamps.js')
 const express=require('express')
 const router=express.Router();
+const {protect,authorize, authorizeBootcampRole}=require('../middleware/auth.js')
 
 router.route('/radius/:zipcode/:distance').get(getBootcampsInRadius)
 
 router.route('/')
     .get(getBootcamps)
-    .post(createBootcamp)
+    .post(protect,authorize('publisher','admin'),createBootcamp)
 
 router.route('/:id')
     .get(getBootcamp)
-    .put(updateBootcamp)
-    .delete(deleteBootcamp)
+    .put(protect,authorizeBootcampRole('update'),updateBootcamp)
+    .delete(protect,authorize('publisher','admin'),deleteBootcamp)
+   
+router.post('/:id/assign',protect,authorizeBootcampRole('roleManage'),addUserToBootcamp)    
 
 module.exports=router
